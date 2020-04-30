@@ -1,8 +1,55 @@
+"""Color schemes derived from those in weblogo:
+https://github.com/ostrokach/weblogo/blob/master/weblogolib/colorscheme.py"""
+
+#  Copyright (c) 2003-2005 The Regents of the University of California.
+#  Copyright (c) 2005 Gavin E. Crooks
+
+#  This software is distributed under the MIT Open Source License.
+#  <http://www.opensource.org/licenses/mit-license.html>
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a 
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included
+#  in all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+#  THE SOFTWARE.
+
+""" Popular color codings for nucleic and amino acids. 
+Classes:
+    ColorScheme -- A color scheme
+    ColorGroup  
+    
+    
+Generic
+    monochrome
+Nucleotides
+    nucleotide
+    base pairing
+Amino Acid
+    hydrophobicity
+    chemistry
+    charge
+    taylor
+Status : Beta - Needs documentation.
+"""
+# Good online references include bioruby and the JalView alignment editor.
+# Clamp, M., Cuff, J., Searle, S. M. and Barton, G. J. (2004), 
+# "The Jalview Java Alignment Editor," Bioinformatics, 12, 426-7
+# http://www.jalview.org
+
 import pandas as pd
 import io
-
-"""These were taken from weblogolib. There these classes have more functionality,
-but I just wanted a way to use these assignments as simple lookup"""
 
 __all__ = ['aa_grouping',
            'color_group',

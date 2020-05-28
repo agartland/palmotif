@@ -143,8 +143,9 @@ def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, ret
         dwg.save()
         return filename
     else:
+        svg = dwg.tostring()
         if return_html:
             return _basic_html.format(svg=svg, height=svg_height, width=svg_width)
         else:
-            return dwg.tostring()
+            return svg
 

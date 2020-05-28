@@ -14,7 +14,13 @@ import subprocess
 cmd = ['convert', '-density 200', 'test.svg', 'test.png']
 subprocess.call(' '.join(cmd), shell=True)"""
 
-def svg_logo(motif, filename, color_scheme='shapely', return_str=False):
+_basic_html = """<html>
+<svg width="{width}" height="{height}">
+{svg}
+</svg>
+</html>"""
+
+def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, return_html=False, svg_height='500px', svg_width='500px'):
     """Sequence logo of the motif using SVG.
 
     Parameters
@@ -30,6 +36,10 @@ def svg_logo(motif, filename, color_scheme='shapely', return_str=False):
         Options: nucleotide, base_pairing, hydrophobicity, chemistry, charge, taylor, logojs, shapely
     return_str : bool
         Optionally return SVG as text instead of saving to filename."""
+    if filename is None:
+        return_str = True
+    if return_html:
+        return_str = True
 
     colors = getattr(aacolors, color_scheme)
 
@@ -133,6 +143,8 @@ def svg_logo(motif, filename, color_scheme='shapely', return_str=False):
         dwg.save()
         return filename
     else:
-        return dwg.tostring()
+        if return_html:
+            return _basic_html.format(svg=svg, height=svg_height, width=svg_width)
+        else:
+            return dwg.tostring()
 
-    

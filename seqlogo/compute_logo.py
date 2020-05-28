@@ -131,7 +131,7 @@ def reduce_gaps(align, thresh=0.7):
         align = align.loc[align.map(lambda seq: seq[pos] == '-')]
     return align.map(lambda seq: ''.join([aa for pos, aa in enumerate(seq) if not pos in removePos]))
 
-def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=parasail.blosum62):
+def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=parasail.blosum62, alphabet=None):
     """Aligns each seq in seqs to centroid using global Needleman-Wunsch and then counts
     the AA/symbols in each seq at each alignment/centroid position. Alignment positions
     containing a gap/"-" in the centroid sequence are not counted.
@@ -150,9 +150,12 @@ def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=pa
     counts : pd.DataFrame [position in centroid x alphabet]
         A count of each AA in each seqs according to their positions after alignment
         with the centroid."""
+    if alphabet is None:
+        alphabet = aa_alphabet
+
     centroid_query = parasail.profile_create_stats_sat(centroid, matrix=matrix)
     
-    seq_algn = np.zeros((len(centroid), len(aa_alphabet)))
+    seq_algn = np.zeros((len(centroid), len(alphabet)))
     for s in seqs:
         # a = parasail.nw_trace(centroid, s, open=3, extend=3, matrix=parasail.blosum62)
         a = parasail.nw_trace_scan_profile_sat(centroid_query, s, open=gopen, extend=gextend)
@@ -160,9 +163,9 @@ def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=pa
         pos = 0
         for ref_aa, q_aa in zip(a.traceback.ref, a.traceback.query):
             if not q_aa == '-':
-                seq_algn[pos, aa_alphabet.index(ref_aa)] = seq_algn[pos, aa_alphabet.index(ref_aa)] + 1
+                seq_algn[pos, alphabet.index(ref_aa)] = seq_algn[pos, alphabet.index(ref_aa)] + 1
                 pos += 1
-    return pd.DataFrame(seq_algn, index=list(centroid), columns=aa_alphabet)
+    return pd.DataFrame(seq_algn, index=list(centroid), columns=alphabet)
 
 def _get_frequencies(seqs, alphabet, weights, add_one=False):
     L = len(seqs[0])
@@ -178,7 +181,7 @@ def _get_frequencies(seqs, alphabet, weights, add_one=False):
         freq = freq / freq.sum(axis=0, keepdims=True)
     return freq
 
-def compute_relative_motif(seqs, refs):
+def compute_relative_motif(seqs, refs, alphabet=None):
     """Use log-OR scores indicating how likely it was to see the AA
     in the seqs vs. the refs. All seqs and refs must have the same length (i.e. be "aligned")
 
@@ -202,16 +205,19 @@ def compute_relative_motif(seqs, refs):
 
     """
     """Adding 1 to the refs to avoid inf's, but this should be studied more carefully"""
-    p = _get_frequencies(refs, aa_alphabet, np.ones(len(refs)), add_one=True)
-    q = _get_frequencies(seqs, aa_alphabet, np.ones(len(seqs)))
+    if alphabet is None:
+        alphabet = aa_alphabet
+
+    p = _get_frequencies(refs, alphabet, np.ones(len(refs)), add_one=True)
+    q = _get_frequencies(seqs, alphabet, np.ones(len(seqs)))
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         A = q * np.log2(q/p)
     A[np.isnan(A)] = 0
-    A = pd.DataFrame(A, index=aa_alphabet)
+    A = pd.DataFrame(A, index=alphabet)
     return A
 
-def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None):
+def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None, alphabet=None):
     """Compute pairwise alignments between the centroid and all sequences in seqs and refs. The motif
     will have the same length as the centroid with log-OR scores indicating how likely it was to see the AA
     in the seqs vs. the refs.
@@ -228,6 +234,8 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
         Gap open penalty for parasail
     gextend : int
         Gap extend penalty for parasail
+    alphabet : str
+        String of characters whose frequency should be considered/counted
     matrix : substitution matrix
         Matrix from parasail for the alignment
         None for default parasail.blosum62
@@ -240,9 +248,12 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
         A matrix of log-OR scores that can be used directly with the plotPALLogo function"""
     if matrix is None:
         matrix = parasail.blosum62
+    
+    if alphabet is None:
+        alphabet = aa_alphabet
 
     """Returned DataFrame is [positions x alphabet] opposite of output"""
-    seq_algn = pairwise_alignment_frequencies(centroid, seqs, gopen=gopen, gextend=gextend, matrix=matrix)
+    seq_algn = pairwise_alignment_frequencies(centroid, seqs, gopen=gopen, gextend=gextend, matrix=matrix, alphabet=alphabet)
     L = seq_algn.shape[0]
 
     if refs is None:

@@ -9,6 +9,6 @@ install:
   - pip install coveralls
 script:
   - pytest
-  - pytest --cov=hierdiff/
+  - pytest --cov=seqlogo/
 after_success:
   - coveralls

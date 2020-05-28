@@ -5,7 +5,7 @@ import warnings
 try:
     import parasail
 except ImportError:
-    print('Importing seqlogo without alignment support from parasail.')
+    print('Importing palmotif without alignment support from parasail.')
 
 __all__ = ['compute_motif',
            'compute_pal_motif',

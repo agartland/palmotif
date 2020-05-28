@@ -1,14 +1,14 @@
 """
-python -m unittest seqlogo/tests/test_compute.py
+python -m unittest palmotif/tests/test_compute.py
 """
 import unittest
 import numpy as np
 import pandas as pd
 from os.path import join as opj
 
-from seqlogo import *
+from palmotif import *
 
-from seqlogo.tests.sequences import seqs1, seqs2
+from palmotif.tests.sequences import seqs1, seqs2
 
 
 class TestCompute(unittest.TestCase):

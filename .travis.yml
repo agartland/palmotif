@@ -9,6 +9,6 @@ install:
   - pip install coveralls
 script:
   - pytest
-  - pytest --cov=seqlogo/
+  - pytest --cov=palmotif/
 after_success:
   - coveralls

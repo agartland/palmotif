@@ -1,4 +1,9 @@
 # palmotif
+
+[![Build Status](https://travis-ci.com/agartland/palmotif.svg?branch=master)](https://travis-ci.com/agartland/palmotif)
+[![PyPI version](https://badge.fury.io/py/palmotif.svg)](https://badge.fury.io/py/palmotif)
+[![Coverage Status](https://coveralls.io/repos/github/agartland/palmotif/badge.svg?branch=master)](https://coveralls.io/github/agartland/palmotif?branch=master)
+
 Python package for computing and plotting sequence logos, with output as SVG or matplotlib
 
 Use PyPI package `seqlogo` for standard logos. This package allows for creating logos of sequences with different lengths.

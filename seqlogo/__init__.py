@@ -1,7 +1,6 @@
 from .mpl_plot import mpl_logo
 from .svg_logo import svg_logo
 from .compute_logo import *
-from . import muscle
 
 __all__ = ['compute_motif',
            'mpl_logo',

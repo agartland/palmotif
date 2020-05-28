@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.6"
+# command to install dependencies
+install:
+  - travis_retry pip install -r requirements-dev.txt
+  - travis_retry pip install -r requirements.txt
+  - pip install pytest-cov
+  - pip install coveralls
+script:
+  - pytest
+  - pytest --cov=hierdiff/
+after_success:
+  - coveralls

@@ -12,8 +12,6 @@ from seqlogo.tests.sequences import seqs1, seqs2
 
 
 class TestSeqlogo(unittest.TestCase):
-    """TODO: generate these test files and then run tests against them"""
-    
     def test_svg_plot(self):
         fn = opj('seqlogo', 'tests', 'test.svg')
         a = pd.DataFrame(np.array([[0.1, 0.2, 0, 0.5],[0, 0.3, 0.8, 0.1], [0.5, 0.1, 0.4, 0.]]).T, columns=[0, 1, 2], index=['A', 'C', 'T', 'G'])

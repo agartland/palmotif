@@ -20,4 +20,10 @@ opts = dict(name='seqlogo',
             packages=PACKAGES
            )
 
-setup(**opts)
+
+requires = ['matplotlib',
+            'numpy>=1.16',
+            'pandas>=0.24.2',
+            'parasail>=1.1.17',
+            'svgwrite']
+setup(**opts, install_requires=requires)

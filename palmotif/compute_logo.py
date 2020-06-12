@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import warnings
+from scipy.stats import multinomial
 
 try:
     import parasail
@@ -184,6 +185,10 @@ def _get_frequencies(seqs, alphabet, weights, add_one=False):
 def compute_relative_motif(seqs, refs, alphabet=None):
     """Use log-OR scores indicating how likely it was to see the AA
     in the seqs vs. the refs. All seqs and refs must have the same length (i.e. be "aligned")
+    
+    For discussion about relative logos:
+    https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2489-3
+    https://academic.oup.com/nar/article/40/W1/W281/1076274
 
     Parameters
     ----------
@@ -217,7 +222,7 @@ def compute_relative_motif(seqs, refs, alphabet=None):
     A = pd.DataFrame(A, index=alphabet)
     return A
 
-def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None, alphabet=None):
+def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None, alphabet=None, return_loglikelihood=False):
     """Compute pairwise alignments between the centroid and all sequences in seqs and refs. The motif
     will have the same length as the centroid with log-OR scores indicating how likely it was to see the AA
     in the seqs vs. the refs.
@@ -245,7 +250,9 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
     Returns
     -------
     A : pd.DataFrame [AA alphabet x position]
-        A matrix of log-OR scores that can be used directly with the plotPALLogo function"""
+        A matrix of log-OR scores that can be used directly with the plotPALLogo function
+    ll : pd.Series [position in centroid]
+        Optionally, per position log-likelihood of observing the sequences, given the reference"""
     if matrix is None:
         matrix = parasail.blosum62
     
@@ -284,4 +291,16 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
     A = pd.DataFrame(A, index=seq_algn.index, columns=seq_algn.columns)
     #pdf = pd.DataFrame(p, index=ref_algn.index, columns=ref_algn.columns)
     #qdf = pd.DataFrame(q, index=ref_algn.index, columns=ref_algn.columns)
-    return A.T
+
+    if not return_loglikelihood:
+        return A.T
+    else:
+        loglik = np.zeros(len(centroid))
+        """A and seq_algn have alphabet in columns (before A gets transposed)"""
+        for posi in range(len(centroid)):
+            tmp = seq_algn.iloc[posi].values
+            n = tmp.sum()
+            pr = ref_algn.iloc[posi].values
+            loglik[posi] = multinomial.logpmf(tmp, n, pr)
+
+        return A.T, loglik

@@ -38,6 +38,10 @@ class TestCompute(unittest.TestCase):
         mixed_seqs1 = seqs1 + [s[:9] for s in seqs1]
         mixed_seqs2 = seqs2 + [s[:9] for s in seqs2]
         motif = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None)
+    def test_pal_loglik(self):
+        mixed_seqs1 = seqs1 + [s[:9] for s in seqs1]
+        mixed_seqs2 = seqs2 + [s[:9] for s in seqs2]
+        motif, ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True)
 
 
    

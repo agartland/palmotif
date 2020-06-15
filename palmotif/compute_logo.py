@@ -222,7 +222,7 @@ def compute_relative_motif(seqs, refs, alphabet=None):
     A = pd.DataFrame(A, index=alphabet)
     return A
 
-def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None, alphabet=None, return_loglikelihood=False):
+def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None, alphabet=None, return_loglikelihood=False, smooth = True):
     """Compute pairwise alignments between the centroid and all sequences in seqs and refs. The motif
     will have the same length as the centroid with log-OR scores indicating how likely it was to see the AA
     in the seqs vs. the refs.
@@ -301,6 +301,13 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
             tmp = seq_algn.iloc[posi].values
             n = tmp.sum()
             pr = ref_algn.iloc[posi].values
+            # https://en.wikipedia.org/wiki/Additive_smoothing
+            if smooth:
+                laplace_smoothing = 1E-6
+                pr = [x if x > 0 else laplace_smoothing for x in pr]
+                
+            pr = np.divide(pr, np.sum(pr))
             loglik[posi] = multinomial.logpmf(tmp, n, pr)
+
 
         return A.T, loglik

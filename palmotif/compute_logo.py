@@ -305,6 +305,7 @@ def compute_pal_motif(centroid, seqs, refs=None, gopen=3, gextend=3, matrix=None
             if smooth:
                 laplace_smoothing = 1E-6
                 pr = [x if x > 0 else laplace_smoothing for x in pr]
+                
             pr = np.divide(pr, np.sum(pr))
             loglik[posi] = multinomial.logpmf(tmp, n, pr)
 

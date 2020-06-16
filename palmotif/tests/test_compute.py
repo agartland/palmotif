@@ -27,45 +27,46 @@ class TestCompute(unittest.TestCase):
 
     def test_pal_no_ref(self):
         mixed_seqs = seqs1 + [s[:9] for s in seqs1]
-        motif = compute_pal_motif(mixed_seqs[0], mixed_seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None)
+        motif, out = compute_pal_motif(mixed_seqs[0], mixed_seqs, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=None)
 
-    def test_pal_no_ref(self):
+    def test_pal_no_ref2(self):
         mixed_seqs1 = seqs1 + [s[:9] for s in seqs1]
         mixed_seqs2 = seqs2 + [s[:9] for s in seqs2]
-        motif = compute_pal_motif(mixed_seqs1[1], mixed_seqs1, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=uniprot_frequency)
+        motif, out = compute_pal_motif(mixed_seqs1[1], mixed_seqs1, refs=None, gopen=3, gextend=3, matrix=None, ref_freqs=uniprot_frequency)
 
     def test_pal_yes_ref(self):
         mixed_seqs1 = seqs1 + [s[:9] for s in seqs1]
         mixed_seqs2 = seqs2 + [s[:9] for s in seqs2]
-        motif = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None)
+        motif, out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None)
+
     def test_pal_loglik(self):
         mixed_seqs1 = seqs1 + [s[:9] for s in seqs1]
         mixed_seqs2 = seqs2 + [s[:9] for s in seqs2]
-        motif, ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True)
+        motif, out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, bootstrap_samples=100)
 
     def test_pal_yes_ref_with_liklihood(self):
         mixed_seqs1 = ["A","A","A","A"]
         mixed_seqs2 = ["T","T","T","T"]
-        motif,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True)
-        assert ll[0] < 0.000000000000000000000000001 
+        motif, out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, bootstrap_samples=100)
+        assert out['loglik'].iloc[0] < 0.000000000000000000000000001 
 
     def test_pal_yes_ref_with_liklihood2(self):
         """Assert that number is very small in case where seqs match ref when smooth = True, and 0 if smooth = false """
         mixed_seqs1 = ["A","A","A"]
         mixed_seqs2 = ["A","A","A"]
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = True)
-        assert ll < 0.0001#,#[np.log(1**3)])#atol=1)
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = False)
-        assert ll[0] == np.log(1**3)
+        _, out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, pseudo_count=1e-6)
+        assert out['loglik'].iloc[0] < 0.0001#,#[np.log(1**3)])#atol=1)
+        _, out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, pseudo_count=0)
+        assert out['loglik'].iloc[0] == np.log(1**3)
 
     def test_pal_yes_ref_with_liklihood3(self):
         """simple tests that log liklihood is expected in simple bernoulli trial i.e. (.5)^4 if smooth = False and very close if smooth is True"""
         mixed_seqs1 = ["A","A","A","A"]
         mixed_seqs2 = ["T","T","A","A"]
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = True)
-        assert np.isclose(ll, [np.log(.5**4)], rtol=0.00001)
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = False)
-        assert ll[0] == np.log(.5**4)
+        _,out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, pseudo_count=1e-6)
+        assert np.isclose(out['loglik'].iloc[0], np.log(.5**4), rtol=0.00001)
+        _,out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, pseudo_count=0)
+        assert out['loglik'].iloc[0] == np.log(.5**4)
 
     def test_pal_yes_ref_with_liklihood4(self):
         """
@@ -74,8 +75,8 @@ class TestCompute(unittest.TestCase):
         """
         mixed_seqs1 = ["T","A","A"]
         mixed_seqs2 = ["A","A","A"]
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = True)
-        assert ll[0]> np.NINF
+        _,out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None)
+        assert out['loglik'].iloc[0] > np.NINF
   
     def test_pal_yes_ref_with_liklihood_no_smoothing(self):
         """
@@ -83,8 +84,8 @@ class TestCompute(unittest.TestCase):
         """
         mixed_seqs1 = ["T","A","A"]
         mixed_seqs2 = ["A","A","A"]
-        _,ll = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, return_loglikelihood=True, smooth = False)
-        assert ll[0] == np.NINF
+        _,out = compute_pal_motif(mixed_seqs1[2], mixed_seqs1, refs=mixed_seqs2, gopen=3, gextend=3, matrix=None, pseudo_count=0)
+        assert out['loglik'].iloc[0] == np.NINF
 
 if __name__ == '__main__':
     unittest.main()

@@ -17,7 +17,7 @@ opts = dict(name='palmotif',
             license='MIT',
             author='Andrew Fiore-Gartland',
             author_email='agartlan@fredhutch.org',
-            version='0.1',
+            version='0.2',
             packages=PACKAGES
            )
 
@@ -25,5 +25,6 @@ requires = ['matplotlib',
             'numpy>=1.16',
             'pandas>=0.24.2',
             'parasail>=1.1.17',
-            'svgwrite']
+            'svgwrite',
+            'scipy>=1.4.1']
 setup(**opts, install_requires=requires)

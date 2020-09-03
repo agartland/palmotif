@@ -39,7 +39,7 @@ uniprot_frequency = {'A': 8.25,
                      'Y': 2.92,
                      'V': 6.87}
 
-def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, gap_reduce=None, alphabet=None):
+def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, gap_reduce=None, alphabet=None, oddsratio=False, pseudocount=0):
     """Compute heights for a sequence logo based on the frequency of AAs/symbols at each position of the
     aligned sequences. The output matrix/DataFrame contains the relative entropy of each AA/symbol in bits. It
     is computed relative to uniform frequencies (default) or some fixed set of frequencies (not position specific).
@@ -87,18 +87,25 @@ def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, g
         align = reduce_gaps(align, thresh=gap_reduce)
 
     L = len(align.iloc[0])
+    
+    freq = _get_frequencies(align, alphabet, weights, pseudocount=pseudocount)
+    
+    # red_alphabet = freq.index[(np.abs(freq) > 0).any(axis=1)]
     nAA = len(alphabet)
-
-    freq = _get_frequencies(align, alphabet, weights)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
 
         if not reference_freqs is None:
-            reference_freqs = np.array([reference_freqs.get(aa, 0) for aa in alphabet])
+            min_freq = np.min([f for f in reference_freqs.values()])
+            reference_freqs = np.array([reference_freqs.get(aa, min_freq / 2) for aa in alphabet])
             reference_freqs = reference_freqs / np.sum(reference_freqs)
             reference_freqs = np.tile(reference_freqs[:, None], (1, L))
-            heights = freq * np.log2(freq / reference_freqs)
+            if oddsratio:
+                # heights = reference_freqs * np.log2(freq / reference_freqs)
+                heights = np.log2(freq / reference_freqs)
+            else:    
+                heights = freq * np.log2(freq / reference_freqs)
             heights[np.isnan(heights)] = 0
         else:
             tot_entropy = np.log2(nAA) - np.nansum(-freq * np.log2(freq), axis=0, keepdims=True)
@@ -171,7 +178,7 @@ def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=pa
                 pos += 1
     return seq_algn
 
-def _get_frequencies(seqs, alphabet, weights, add_one=False):
+def _get_frequencies(seqs, alphabet, weights, pseudocount=0):
     L = len(seqs[0])
     nAA = len(alphabet)
     
@@ -179,13 +186,10 @@ def _get_frequencies(seqs, alphabet, weights, add_one=False):
     for coli in range(L):
         for si, s in enumerate(seqs):
             freq[alphabet.index(s[coli]), coli] += weights[si]
-    if add_one:
-        freq = (freq + 1) / (freq + 1).sum(axis=0, keepdims=True)
-    else:
-        freq = freq / freq.sum(axis=0, keepdims=True)
+    freq = (freq + pseudocount) / (freq + pseudocount).sum(axis=0, keepdims=True)
     return freq
 
-def compute_relative_motif(seqs, refs, alphabet=None):
+def compute_relative_motif(seqs, refs, alphabet=None, oddsratio=False):
     """Use statistic related to the Kullback-Liebler divergence to indicate how surprising
     it is to see the AAs in seqs vs. the refs.
     All seqs and refs must have the same length (i.e. be "aligned")
@@ -222,7 +226,10 @@ def compute_relative_motif(seqs, refs, alphabet=None):
     q = _get_frequencies(seqs, alphabet, np.ones(len(seqs)))
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        A = q * np.log2(q/p)
+        if oddsratio:
+            A = np.log2(q/p)
+        else:
+            A = q * np.log2(q/p)
     A[np.isnan(A)] = 0
     A = pd.DataFrame(A, index=alphabet)
     return A
@@ -230,7 +237,7 @@ def compute_relative_motif(seqs, refs, alphabet=None):
 def compute_pal_motif(centroid, seqs, refs=None,
                       gopen=3, gextend=3, matrix=None,
                       ref_freqs=None, alphabet=None, bootstrap_samples=0, alpha=0.05,
-                      pseudo_count=1):
+                      pseudo_count=1, oddsratio=False):
     """Compute pairwise alignments between the centroid and all sequences in seqs and refs. The motif
     will have the same length as the centroid with a statistic for each symbol at each position
     indicating the divergence of the observed distribution from the reference. Summing the statistics
@@ -314,7 +321,10 @@ def compute_pal_motif(centroid, seqs, refs=None,
     q = (seq_algn.values) / (seq_algn.values).sum(axis=1, keepdims=True)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        A = q * np.log2(q/p)
+        if oddsratio:
+            A = np.log2(q/p)
+        else:
+            A = q * np.log2(q/p)
         kl = _kl_stat(np.sum(raw_seq_algn, axis=2), p)
     A[np.isnan(A)] = 0
     A = pd.DataFrame(A, index=seq_algn.index, columns=seq_algn.columns)

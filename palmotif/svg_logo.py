@@ -20,7 +20,12 @@ _basic_html = """<html>
 </svg>
 </html>"""
 
-def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, return_html=False, svg_height='500px', svg_width='500px'):
+def svg_logo(motif, filename=None,
+             color_scheme='chemistry',
+             return_str=False, return_html=False,
+             yscale=1, svg_height='500px', svg_width='500px',
+             ylabel='',
+             yrange=None):
     """Sequence logo of the motif using SVG.
 
     Parameters
@@ -43,31 +48,41 @@ def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, ret
 
     colors = getattr(aacolors, color_scheme)
 
+    yscale *= 4
     margin = 10
-    left_margin = 50
+    left_margin = 100
     bottom_margin = 50
     xpad = 4
     HW = 100
-    fontsize='12pt'
+    fontsize='20pt'
+    ylabel_fontsize='28pt'
 
-    """Scale height of 100px to absolute max value"""
-    mx_value = np.max(np.abs(motif.values))
-    hscale = HW / mx_value
-    wscale = 1
+    if yrange is None:
+        """Scale height of 100px to absolute max value"""
+        # mx_value = np.max(np.abs(motif.values))
+        mx_value = np.max(np.sum(np.abs(motif.values), axis=0))
+        hscale = HW / mx_value
+        wscale = 1
 
-    mx_pos = 0
-    mn_neg = 0
-    for j in range(motif.shape[1]):
-        tmp = motif.values[:, j]
-        tot = np.sum(tmp[tmp>0])
-        if tot > mx_pos:
-            mx_pos = tot
-        tot = np.sum(tmp[tmp<0])
-        if tot < mn_neg:
-            mn_neg = tot
+        mx_pos = 0
+        mn_neg = 0
+        for j in range(motif.shape[1]):
+            tmp = motif.values[:, j]
+            tot = np.sum(tmp[tmp>0])
+            if tot > mx_pos:
+                mx_pos = tot
+            tot = np.sum(tmp[tmp<0])
+            if tot < mn_neg:
+                mn_neg = tot
+    else:
+        mn_neg, mx_pos = yrange
+        mx_value = mx_pos - mn_neg
+        hscale = HW / mx_value
+        wscale = 1
+        
     
     yticklabels = mpl.ticker.MaxNLocator(nbins=5, steps=[1, 2, 2.5, 5, 10]).tick_values(mn_neg, mx_pos)
-    yticks = [hscale * yt for yt in yticklabels]
+    yticks = [hscale * yt * yscale for yt in yticklabels]
 
     mx_pos = hscale * mx_pos
     mn_neg = hscale * mn_neg
@@ -98,10 +113,10 @@ def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, ret
         
         posshift = 2
         for yi, (aa, score) in enumerate(pos_scores.items()):
-            scaled_height = hscale * score
+            scaled_height = hscale * score * yscale
             translate = (xshift, yzero - posshift - scaled_height)
             transform = 'translate({xtrans} {ytrans}) scale({xscale} {yscale})'.format(xtrans=translate[0], ytrans=translate[1],
-                                                                                        xscale=wscale, yscale=score/mx_value)
+                                                                                        xscale=wscale, yscale=yscale * score/mx_value)
             letter_groups[(xi, aa)] = add_letter(dwg, aa, group_id='%d_%s' % (xi, aa), color=colors.color(aa), background='white', transform=transform)
             #box = dwg.add(dwg.rect(insert=(x*cm, y*cm), size=(X*cm, score*fontsize*cm), fill='green', opacity=score))
             #print(aa, x, y, score)
@@ -109,10 +124,10 @@ def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, ret
 
         negshift = 2
         for yi, (aa, score) in enumerate(neg_scores.items()):
-            scaled_height = hscale * score
+            scaled_height = hscale * score * yscale
             translate = (xshift, yzero + negshift)
             transform = 'translate({xtrans} {ytrans}) scale({xscale} {yscale})'.format(xtrans=translate[0], ytrans=translate[1],
-                                                                                        xscale=wscale, yscale=score/mx_value)
+                                                                                        xscale=wscale, yscale=yscale * score/mx_value)
             letter_groups[(xi, aa)] = add_letter(dwg, aa, group_id='%d_%s' % (xi, aa), color=colors.color(aa), background='white', transform=transform)
             #box = dwg.add(dwg.rect(insert=(x*cm, y*cm), size=(X*cm, score*fontsize*cm), fill='green', opacity=score))
             #print(aa, x, y, score)
@@ -138,6 +153,15 @@ def svg_logo(motif, filename=None, color_scheme='shapely', return_str=False, ret
                           font_weight='normal',
                           text_anchor='middle',
                           dominant_baseline='hanging'))
+    x, y = (0, yzero - yticks[len(yticks) // 2])
+    axes.add(dwg.text(ylabel, (x, y),
+                          fill='#000000',
+                          font_size=ylabel_fontsize,
+                          font_family='sans-serif',
+                          font_weight='normal',
+                          text_anchor='middle',
+                          dominant_baseline='hanging',
+                          transform=f"rotate(-90, {x}, {y})"))
 
     if not return_str:
         dwg.save()

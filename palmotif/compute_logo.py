@@ -39,7 +39,7 @@ uniprot_frequency = {'A': 8.25,
                      'Y': 2.92,
                      'V': 6.87}
 
-def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, gap_reduce=None, alphabet=None, oddsratio=False, pseudocount=0):
+def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, gap_reduce=None, alphabet=None, oddsratio=False, pseudo_count=0):
     """Compute heights for a sequence logo based on the frequency of AAs/symbols at each position of the
     aligned sequences. The output matrix/DataFrame contains the relative entropy of each AA/symbol in bits. It
     is computed relative to uniform frequencies (default) or some fixed set of frequencies (not position specific).
@@ -88,7 +88,7 @@ def compute_motif(seqs, reference_freqs=None, weights=None, align_first=False, g
 
     L = len(align.iloc[0])
     
-    freq = _get_frequencies(align, alphabet, weights, pseudocount=pseudocount)
+    freq = _get_frequencies(align, alphabet, weights, pseudo_count=pseudo_count)
     
     # red_alphabet = freq.index[(np.abs(freq) > 0).any(axis=1)]
     nAA = len(alphabet)
@@ -178,7 +178,7 @@ def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=pa
                 pos += 1
     return seq_algn
 
-def _get_frequencies(seqs, alphabet, weights, pseudocount=0):
+def _get_frequencies(seqs, alphabet, weights, pseudo_count=0):
     L = len(seqs[0])
     nAA = len(alphabet)
     
@@ -186,10 +186,10 @@ def _get_frequencies(seqs, alphabet, weights, pseudocount=0):
     for coli in range(L):
         for si, s in enumerate(seqs):
             freq[alphabet.index(s[coli]), coli] += weights[si]
-    freq = (freq + pseudocount) / (freq + pseudocount).sum(axis=0, keepdims=True)
+    freq = (freq + pseudo_count) / (freq + pseudo_count).sum(axis=0, keepdims=True)
     return freq
 
-def compute_relative_motif(seqs, refs, alphabet=None, oddsratio=False):
+def compute_relative_motif(seqs, refs, alphabet=None, oddsratio=False, pseudo_count=1):
     """Use statistic related to the Kullback-Liebler divergence to indicate how surprising
     it is to see the AAs in seqs vs. the refs.
     All seqs and refs must have the same length (i.e. be "aligned")
@@ -222,7 +222,7 @@ def compute_relative_motif(seqs, refs, alphabet=None, oddsratio=False):
     if alphabet is None:
         alphabet = aa_alphabet
 
-    p = _get_frequencies(refs, alphabet, np.ones(len(refs)), add_one=True)
+    p = _get_frequencies(refs, alphabet, np.ones(len(refs)), pseudo_count=pseudo_count)
     q = _get_frequencies(seqs, alphabet, np.ones(len(seqs)))
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -269,7 +269,7 @@ def compute_pal_motif(centroid, seqs, refs=None,
     ref_freqs : dict or None
         Reference frequencies for each AA
     pseudo_count : float
-        A pseudocount added to each alphabet symbol's count in the reference set,
+        A pseudo_count added to each alphabet symbol's count in the reference set,
         to "shrink" the reference probabilities toward uniform and prevent infinite
         outputs.
     bootstrap_samples : bool

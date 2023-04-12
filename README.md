@@ -6,8 +6,6 @@
 
 Python package for computing and plotting sequence logos, with output as SVG or matplotlib
 
-Use PyPI package `seqlogo` for standard logos. This package allows for creating logos of sequences with different lengths.
-
 Credit to developers of more sophisticated [LogoJS](https://github.com/weng-lab/logojs-package) for the SVG alphabet in this package.
 
 Color schemes are derived from those in [weblogo](https://github.com/ostrokach/weblogo)

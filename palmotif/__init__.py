@@ -7,4 +7,5 @@ __all__ = ['compute_motif',
            'compute_pal_motif',
            'uniprot_frequency',
            'compute_relative_motif',
-           'svg_logo']
+           'svg_logo'
+           'create_alignment']

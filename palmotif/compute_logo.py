@@ -14,7 +14,8 @@ __all__ = ['compute_motif',
            'compute_pal_motif',
            'uniprot_frequency',
            'compute_relative_motif',
-           'consensus_seq']
+           'consensus_seq',
+           'create_alignment']
 
 aa_alphabet = [aa for aa in 'ARNDCQEGHILKMFPSTWYVBZX-']
 
@@ -142,7 +143,7 @@ def reduce_gaps(align, thresh=0.7):
         align = align.loc[align.map(lambda seq: seq[pos] == '-')]
     return align.map(lambda seq: ''.join([aa for pos, aa in enumerate(seq) if not pos in removePos]))
 
-def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=parasail.blosum62, alphabet=None):
+def pairwise_alignment_frequencies(centroid, seqs, weights=None, gopen=3, gextend=3, matrix=parasail.blosum62, alphabet=None):
     """Aligns each seq in seqs to centroid using global Needleman-Wunsch and then counts
     the AA/symbols in each seq at each alignment/centroid position. Alignment positions
     containing a gap/"-" in the centroid sequence are not counted.
@@ -164,17 +165,20 @@ def pairwise_alignment_frequencies(centroid, seqs, gopen=3, gextend=3, matrix=pa
     if alphabet is None:
         alphabet = aa_alphabet
 
+    if weights is None:
+        weights = np.ones(len(seqs))
+
     centroid_query = parasail.profile_create_stats_sat(centroid, matrix=matrix)
     
     seq_algn = np.zeros((len(centroid), len(alphabet), len(seqs)))
-    for seqi, s in enumerate(seqs):
+    for seqi, w, s in zip(range(len(seqs)), weights, seqs):
         # a = parasail.nw_trace(centroid, s, open=3, extend=3, matrix=parasail.blosum62)
         a = parasail.nw_trace_scan_profile_sat(centroid_query, s, open=gopen, extend=gextend)
         
         pos = 0
         for ref_aa, q_aa in zip(a.traceback.ref, a.traceback.query):
             if not q_aa == '-':
-                seq_algn[pos, alphabet.index(ref_aa), seqi] = 1
+                seq_algn[pos, alphabet.index(ref_aa), seqi] = w
                 pos += 1
     return seq_algn
 
@@ -234,7 +238,7 @@ def compute_relative_motif(seqs, refs, alphabet=None, oddsratio=False, pseudo_co
     A = pd.DataFrame(A, index=alphabet)
     return A
 
-def compute_pal_motif(centroid, seqs, refs=None,
+def compute_pal_motif(centroid, seqs, refs=None, weights=None,
                       gopen=3, gextend=3, matrix=None,
                       ref_freqs=None, alphabet=None, bootstrap_samples=0, alpha=0.05,
                       pseudo_count=1, oddsratio=False):
@@ -248,6 +252,9 @@ def compute_pal_motif(centroid, seqs, refs=None,
 
     A 95% confidence interval on the output can be optionally computed with a
     non-parametric bootstrap. Recommend 10K samples for good estimation.
+
+    Added ability to have sequence weights. It seems like this will work because everyting get divided
+    by the sums over the weights, but have not tested the various statistics. The motif should be good.
 
     Parameters
     ----------
@@ -289,8 +296,9 @@ def compute_pal_motif(centroid, seqs, refs=None,
     if alphabet is None:
         alphabet = aa_alphabet
 
-    """Returned DataFrame is [positions x alphabet] opposite of output"""
-    raw_seq_algn = pairwise_alignment_frequencies(centroid, seqs, gopen=gopen, gextend=gextend, matrix=matrix, alphabet=alphabet)
+    """Returned DataFrame is [positions x alphabet x seqs] opposite of output"""
+    raw_seq_algn = pairwise_alignment_frequencies(centroid, seqs, weights=weights, gopen=gopen, gextend=gextend, matrix=matrix, alphabet=alphabet)
+    """seq_algn is [positions x alphabet]"""
     seq_algn = pd.DataFrame(raw_seq_algn.sum(axis=2), index=list(centroid), columns=alphabet)
     L = seq_algn.shape[0]
 
@@ -302,7 +310,7 @@ def compute_pal_motif(centroid, seqs, refs=None,
         p = np.tile(p[None, :], (L, 1))
         p = p / np.sum(p, axis=1, keepdims=True)
     else:
-        raw_ref_algn = pairwise_alignment_frequencies(centroid, refs, gopen=gopen, gextend=gextend, matrix=matrix)
+        raw_ref_algn = pairwise_alignment_frequencies(centroid, refs, weights=None, gopen=gopen, gextend=gextend, matrix=matrix)
         ref_algn = pd.DataFrame(raw_ref_algn.sum(axis=2), index=list(centroid), columns=alphabet)
         """Adding 1 to refs to avoid inf's, but this should be studied more carefully
         https://en.wikipedia.org/wiki/Additive_smoothing"""
@@ -423,3 +431,24 @@ def multinomial_confint(counts, alpha=0.05):
                np.array([- np.sqrt(delta), np.sqrt(delta)])) /
               (2 * (chi2 + n))).T
     return region
+
+def create_alignment(centroid, seqs, gopen=3, gextend=3, matrix=parasail.blosum62, alphabet=None, sub_identity=True):
+    """Return list of seqs aligned to centroid, optionally with AAs replaced by . for identicall residues"""
+    if alphabet is None:
+        alphabet = aa_alphabet
+
+    centroid_query = parasail.profile_create_stats_sat(centroid, matrix=matrix)
+    
+    out = []
+    for seqi, s in enumerate(seqs):
+        # a = parasail.nw_trace(centroid, s, open=3, extend=3, matrix=parasail.blosum62)
+        a = parasail.nw_trace_scan_profile_sat(centroid_query, s, open=gopen, extend=gextend)
+        sout = ''
+        for ref_aa, q_aa in zip(a.traceback.ref, a.traceback.query):
+            if not q_aa == '-':
+                if ref_aa == q_aa and sub_identity:
+                    sout = sout + '.'
+                else:
+                    sout = sout + ref_aa
+        out.append(sout)
+    return out

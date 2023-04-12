@@ -17,7 +17,7 @@ opts = dict(name='palmotif',
             license='MIT',
             author='Andrew Fiore-Gartland',
             author_email='agartlan@fredhutch.org',
-            version='0.3',
+            version='0.5',
             packages=PACKAGES
            )
 
